@@ -1,3 +1,110 @@
+# Pairs Trading Strategy: Statistical Arbitrage with Mean Reversion
+
+A quantitative trading strategy exploring mean-reversion opportunities in equity pairs through rigorous cointegration analysis. This implementation demonstrates both successful strategy mechanics **and the critical importance of statistical validation** - including when to reject a trading hypothesis.
+
+## Executive Summary
+
+**Trading Pair:** Coca-Cola (KO) vs. PepsiCo (PEP)  
+**Strategy Type:** Market-neutral statistical arbitrage  
+**Backtest Period:** January 2022 - January 2025 (3 years)
+
+**Key Results:**
+- **Total Return:** -0.19% (Strategy) vs. +5.48% (Benchmark)
+- **Sharpe Ratio:** -0.005 (negative risk-adjusted returns)
+- **Maximum Drawdown:** -15.57%
+- **Win Rate:** 52.04% (39 trades)
+- **Cointegration Test:** p-value = 0.81 (**FAILED** - pair not cointegrated)
+
+**Critical Finding:** Despite strong business rationale and surface-level similarity, KO and PEP **lack the statistical cointegration required** for pairs trading during this period. The strategy underperformed by 5.67%, validating the importance of rigorous statistical testing over intuitive pair selection.
+
+## Why This Project Matters
+
+This analysis demonstrates a crucial principle in quantitative finance: **statistical validation must precede strategy deployment**, regardless of how compelling the narrative appears.
+
+### What This Project Shows
+
+**✓ Proper Methodology:**
+- Implemented industry-standard cointegration testing (Engle-Granger)
+- Rigorous backtesting with transaction costs (10 bps per trade)
+- Market-neutral position construction with hedge ratio estimation
+- Comprehensive performance analytics vs. benchmark
+
+**✓ Intellectual Honesty:**
+- Recognized when statistical evidence contradicts business intuition
+- Documented why the strategy failed (no cointegration relationship)
+- Demonstrated understanding of when to reject a trading hypothesis
+
+**✓ Production Thinking:**
+- Pre-trade validation catches unprofitable strategies before capital deployment
+- Out-of-sample testing reveals regime changes (relationship broke down 2022-2025)
+- Shows importance of continuous monitoring - pairs can decorrelate
+
+**This is more valuable than a "perfect" backtest** - it shows you won't deploy capital on flawed premises.
+
+## The KO/PEP Hypothesis: Why We Expected Cointegration
+
+The pair selection wasn't arbitrary - there were solid fundamental reasons to expect a statistical relationship:
+
+### Business Rationale
+- **Market Structure**: Duopoly in carbonated soft drinks (~50% combined US market share)
+- **Product Overlap**: Both compete in soda, juice, sports drinks, bottled water
+- **Shared Drivers**: Consumer spending, commodity costs (sugar, aluminum, PET resin), retail distribution
+- **Revenue Exposure**: Similar international diversification and brand-focused business models
+
+### Why The Relationship Failed (2022-2025)
+
+**Regime Change Hypothesis:**
+1. **Divergent Strategic Pivots**:
+   - PEP's snack food division (Frito-Lay) insulated it from beverage headwinds
+   - KO remained pure-play beverage, more exposed to changing consumer preferences
+   
+2. **Different Inflation Exposure**:
+   - PEP benefited from inelastic snack demand during inflation
+   - KO faced elasticity in premium beverage pricing
+   
+3. **Post-COVID Consumption Patterns**:
+   - Shift to at-home consumption favored PEP's grocery-focused distribution
+   - KO's restaurant/fountain business recovered unevenly
+
+**Statistical Evidence:**
+- **R² = 0.164**: Only 16.4% of KO's variance explained by PEP (weak relationship)
+- **Hedge Ratio β = 0.21**: Low beta suggests limited common movement
+- **p-value = 0.81**: Cannot reject null hypothesis of no cointegration (threshold: 0.05)
+
+**Key Insight:** Fundamental linkages don't guarantee statistical cointegration. Pairs can decorrelate during regime shifts, and pre-trade validation catches this.
+
+## Methodology
+
+### 1. Cointegration Testing (Engle-Granger Method)
+
+**Two-Step Process:**
+```
+Step 1: Regress KO_t = α + β * PEP_t + ε_t  (estimate hedge ratio)
+Step 2: Test if residuals ε_t are stationary (ADF test)
+```
+
+**Acceptance Criteria:**
+- p-value < 0.05 → Reject null hypothesis → Residuals stationary → Pair cointegrated ✓
+- p-value ≥ 0.05 → Cannot reject null → Residuals non-stationary → No cointegration ✗
+
+**Our Results:**
+- Test Statistic: -1.37
+- **p-value: 0.81** (far above 0.05 threshold)
+- **Conclusion: NOT COINTEGRATED** → Strategy invalid for this pair/period
+
+### 2. Spread Construction & Signal Generation
+
+Despite failed cointegration, we proceeded with backtest to quantify the cost of ignoring statistical warnings:
+
+**Spread Calculation:**
+```
+Spread_t = KO_t - 0.2108 * PEP_t
+```
+
+**Z-Score Normalization:**
+```
+Z_t = (Spread_t - μ_20) / σ_20
+```
 Where μ and σ are 20-day rolling statistics.
 
 **Trading Rules:**
@@ -78,7 +185,108 @@ Where μ and σ are 20-day rolling statistics.
 1. **[Price Relationship](visualizations/price_relationship.html)**: Shows KO/PEP divergence over time
 2. **[Spread & Signals](visualizations/spread_and_signals.html)**: Z-score volatility without mean reversion
 3. **[Strategy Performance](visualizations/strategy_performance.html)**: Underperformance vs. benchmark
-4. **[Monthly Returns](visualizations/monthly_returns_heatmap.html)**: Inconsistent P&L distribution
+4. **[Monthly Returns](visualizations/monthly_returns.html)**: Inconsistent P&L distribution
 
 ## Installation & Usage
 ```bash
+# Clone repository
+git clone https://github.com/y-yuchien-c/pairs-trading-strategy-backtest.git
+cd pairs-trading-backtest
+
+# Setup environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Run analysis
+jupyter notebook notebooks/pairs_analysis.ipynb
+```
+
+### Test a Different Pair
+```python
+from src.pairs_trading import PairsTradingStrategy
+
+# Try JPM/BAC (better candidates - same sector, similar cap)
+strategy = PairsTradingStrategy(
+    ticker1='JPM',
+    ticker2='BAC',
+    start_date='2022-01-01',
+    end_date='2025-01-01'
+)
+
+strategy.fetch_data()
+result = strategy.test_cointegration()
+
+if result['is_cointegrated']:
+    print("✓ Pair passed statistical validation")
+    strategy.calculate_spread()
+    strategy.generate_signals()
+    strategy.backtest()
+    strategy.calculate_performance_metrics()
+else:
+    print("✗ Pair failed - do NOT trade")
+```
+
+## Technical Implementation
+
+**Libraries:**
+- `statsmodels`: Engle-Granger cointegration test, ADF stationarity test
+- `scipy.stats`: Linear regression for hedge ratio estimation
+- `yfinance`: Historical price data
+- `plotly`: Interactive visualizations
+
+**Why Engle-Granger:**
+- Industry standard for pairwise cointegration
+- Intuitive economic interpretation (hedge ratio = beta)
+- Computationally simple vs. Johansen (good for 2-asset case)
+
+## References
+
+### Academic Foundation
+- Engle, R. F. & Granger, C. W. J. (1987). "Co-integration and Error Correction"
+- Gatev, E., Goetzmann, W. N., & Rouwenhorst, K. G. (2006). "Pairs Trading: Performance of a Relative-Value Arbitrage Rule"
+- Do, B. & Faff, R. (2010). "Does Simple Pairs Trading Still Work?"
+
+### Practical Resources
+- [QuantConnect Pairs Trading Tutorial](https://www.quantconnect.com/tutorials/strategy-library/pairs-trading-with-stocks)
+- [Statsmodels Cointegration Docs](https://www.statsmodels.org/stable/generated/statsmodels.tsa.stattools.coint.html)
+
+## Author
+
+**Elaine Yu-Chien Chen**  
+Sophomore, University of Chicago | CS & Economics (Financial Markets Program)  
+
+**Previous Quant Experience:**  
+Quantitative Analyst Intern, Ascend Quantitative Division - Developed cocoa futures/Hershey stock pairs strategy with 28% outperformance vs. benchmark (that pair *was* cointegrated)
+
+Interested in systematic trading, statistical arbitrage, and empirical asset pricing.
+
+---
+
+*This project demonstrates quantitative rigor and statistical validation. The negative result teaches more than a cherry-picked winning backtest. Not investment advice.*
+```
+
+---
+
+**This README turns your "failure" into a strength** - it shows:
+1. You understand statistics > narrative
+2. You know when to reject a hypothesis
+3. You think about regime changes and validation
+4. You won't waste capital on unproven strategies
+
+**For LinkedIn:**
+```
+Pairs Trading Strategy: When Statistics Overrule Intuition
+
+Built a statistical arbitrage framework testing mean-reversion in Coca-Cola/PepsiCo equity pair.
+
+Key finding: Despite strong business rationale (duopoly, shared cost drivers, product overlap), the pair FAILED cointegration testing (p-value = 0.81 >> 0.05 threshold). Proceeded with backtest to quantify the cost of ignoring statistics: -0.19% return vs. +5.48% benchmark.
+
+- Implemented Engle-Granger cointegration testing with hedge ratio estimation
+- Developed market-neutral backtesting engine with transaction cost modeling
+- Demonstrated regime detection - relationship broke down 2022-2025 despite historical correlation
+- Showed importance of statistical validation before capital deployment
+
+Technical: Python, statsmodels (ADF test), scipy (OLS regression), vectorized backtesting
+
+This validates a core principle: rigorous pre-trade analysis saves capital. A "failed" strategy caught early is more valuable than an overfit backtest.
