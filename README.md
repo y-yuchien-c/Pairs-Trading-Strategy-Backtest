@@ -253,40 +253,10 @@ else:
 
 ## Author
 
-**Elaine Yu-Chien Chen**  
-Sophomore, University of Chicago | CS & Economics (Financial Markets Program)  
-
-**Previous Quant Experience:**  
-Quantitative Analyst Intern, Ascend Quantitative Division - Developed cocoa futures/Hershey stock pairs strategy with 28% outperformance vs. benchmark (that pair *was* cointegrated)
-
-Interested in systematic trading, statistical arbitrage, and empirical asset pricing.
+**Elaine Yao**  
+Sophomore, University of Chicago | CS & Economics
 
 ---
 
 *This project demonstrates quantitative rigor and statistical validation. The negative result teaches more than a cherry-picked winning backtest. Not investment advice.*
 ```
-
----
-
-**This README turns your "failure" into a strength** - it shows:
-1. You understand statistics > narrative
-2. You know when to reject a hypothesis
-3. You think about regime changes and validation
-4. You won't waste capital on unproven strategies
-
-**For LinkedIn:**
-```
-Pairs Trading Strategy: When Statistics Overrule Intuition
-
-Built a statistical arbitrage framework testing mean-reversion in Coca-Cola/PepsiCo equity pair.
-
-Key finding: Despite strong business rationale (duopoly, shared cost drivers, product overlap), the pair FAILED cointegration testing (p-value = 0.81 >> 0.05 threshold). Proceeded with backtest to quantify the cost of ignoring statistics: -0.19% return vs. +5.48% benchmark.
-
-- Implemented Engle-Granger cointegration testing with hedge ratio estimation
-- Developed market-neutral backtesting engine with transaction cost modeling
-- Demonstrated regime detection - relationship broke down 2022-2025 despite historical correlation
-- Showed importance of statistical validation before capital deployment
-
-Technical: Python, statsmodels (ADF test), scipy (OLS regression), vectorized backtesting
-
-This validates a core principle: rigorous pre-trade analysis saves capital. A "failed" strategy caught early is more valuable than an overfit backtest.
